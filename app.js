@@ -240,6 +240,41 @@ function buildSyntheticDayProfile(city, day, baseM, topM, centerDiff, persistenc
   };
 }
 
+function buildInterpolatedSlices(profile, slicesPerLayer = 4) {
+  const altitudes = [];
+  const grid = [];
+  const weights = [];
+  for (let i = 0; i < profile.altitudes.length - 1; i += 1) {
+    const a1 = profile.altitudes[i];
+    const a2 = profile.altitudes[i + 1];
+    const t1 = profile.grid[i];
+    const t2 = profile.grid[i + 1];
+    for (let s = 0; s < slicesPerLayer; s += 1) {
+      const frac = s / slicesPerLayer;
+      altitudes.push(a1 + (a2 - a1) * frac);
+      grid.push(t1.map((v, h) => {
+        const v1 = v;
+        const v2 = t2[h];
+        if (!Number.isFinite(v1) || !Number.isFinite(v2)) return null;
+        return v1 + (v2 - v1) * frac;
+      }));
+      weights.push(1 - frac * 0.22);
+    }
+  }
+  altitudes.push(profile.altitudes[profile.altitudes.length - 1]);
+  grid.push(profile.grid[profile.grid.length - 1].slice());
+  weights.push(1);
+
+  const temps = grid.flat().filter((v) => Number.isFinite(v));
+  return {
+    altitudes,
+    grid,
+    weights,
+    minTemp: temps.length ? Math.min(...temps) : null,
+    maxTemp: temps.length ? Math.max(...temps) : null,
+  };
+}
+
 function renderTemperatureHeatmap(cityData) {
   const root = document.getElementById('temperatureHeatmap');
   const note = document.getElementById('heatmapMeta');
@@ -262,11 +297,12 @@ function renderTemperatureHeatmap(cityData) {
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
   const cellW = plotW / 24;
-  const cellH = plotH / profile.altitudes.length;
-  const minTemp = profile.minTemp ?? 0;
-  const maxTemp = profile.maxTemp ?? 1;
-  const minAlt = profile.altitudes[0];
-  const maxAlt = profile.altitudes[profile.altitudes.length - 1];
+  const smoothProfile = buildInterpolatedSlices(profile, 5);
+  const cellH = plotH / smoothProfile.altitudes.length;
+  const minTemp = smoothProfile.minTemp ?? 0;
+  const maxTemp = smoothProfile.maxTemp ?? 1;
+  const minAlt = smoothProfile.altitudes[0];
+  const maxAlt = smoothProfile.altitudes[smoothProfile.altitudes.length - 1];
   const altLabels = profile.altitudes.map((m) => `${Math.round(m)}m`);
   const hourLabels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
   const contours = [];
@@ -277,11 +313,11 @@ function renderTemperatureHeatmap(cityData) {
   const hourToX = (h) => padL + h * cellW + cellW / 2;
   const contourAltitudeAtHour = (targetTemp, hourIdx, prevAlt) => {
     const samples = [];
-    for (let r = 0; r < profile.altitudes.length - 1; r += 1) {
-      const a1 = profile.altitudes[r];
-      const a2 = profile.altitudes[r + 1];
-      const t1 = profile.grid[r][hourIdx];
-      const t2 = profile.grid[r + 1][hourIdx];
+    for (let r = 0; r < smoothProfile.altitudes.length - 1; r += 1) {
+      const a1 = smoothProfile.altitudes[r];
+      const a2 = smoothProfile.altitudes[r + 1];
+      const t1 = smoothProfile.grid[r][hourIdx];
+      const t2 = smoothProfile.grid[r + 1][hourIdx];
       if (!Number.isFinite(t1) || !Number.isFinite(t2)) continue;
       const crosses = (t1 - targetTemp) * (t2 - targetTemp) <= 0;
       if (!crosses) continue;
@@ -325,12 +361,12 @@ function renderTemperatureHeatmap(cityData) {
   }
 
   const cells = [];
-  for (let r = 0; r < profile.altitudes.length; r += 1) {
+  for (let r = 0; r < smoothProfile.altitudes.length; r += 1) {
     for (let c = 0; c < 24; c += 1) {
-      const temp = profile.grid[r][c];
+      const temp = smoothProfile.grid[r][c];
       const x = padL + c * cellW;
       const y = padT + r * cellH;
-      const opacity = temp == null ? 0.08 : 0.92;
+      const opacity = temp == null ? 0.12 : smoothProfile.weights[r] ?? 1;
       cells.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(cellW + 0.7).toFixed(1)}" height="${(cellH + 0.7).toFixed(1)}" fill="${tempToColor(temp, minTemp, maxTemp)}" fill-opacity="${opacity.toFixed(2)}"></rect>`);
     }
   }
@@ -346,8 +382,8 @@ function renderTemperatureHeatmap(cityData) {
   }).join('');
 
   const contourSvg = contours.map(({ temp, path }) => {
-    const color = temp >= 0 ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.18)';
-    return `<g><path d="${path}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><text x="${padL + 4}" y="${altitudeToY(profile.altitudes[0]) - 6}" class="heatmap-axis">${temp}°</text></g>`;
+    const color = temp >= 0 ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.22)';
+    return `<g><path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="${padL + 4}" y="${altitudeToY(smoothProfile.altitudes[0]) - 6}" class="heatmap-axis">${temp}°</text></g>`;
   }).join('');
 
   const bandLabels = ['极冷', '偏冷', '微冷', '微暖', '偏暖', '极暖'];
