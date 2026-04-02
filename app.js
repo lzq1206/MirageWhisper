@@ -523,7 +523,7 @@ function renderRanking() {
 function renderCity(cityData) {
   const city = cityData.city;
   cityTitleEl.textContent = `${city.name} · 未来 7 天峰值型逆温与海市蜃楼/绿闪倾向`;
-  cityMetaEl.textContent = `${city.coastal ? '沿海城市' : '内陆对照'} · 坐标 ${city.lat.toFixed(2)}, ${city.lon.toFixed(2)} · 逆温口径：低温→高温→低温峰值型 · 海温${city.coastal ? '已尝试接入' : '不适用'}`;
+  cityMetaEl.textContent = `${city.coastal ? '沿海城市' : '内陆对照'} · 单格点坐标 ${city.lat.toFixed(2)}, ${city.lon.toFixed(2)} · 逆温口径：单点剖面低温→高温→低温峰值型 · 海温${city.coastal ? '已尝试接入' : '不适用'}`;
 
   dailyCardsEl.innerHTML = cityData.daily.map((d) => {
     const dayMetric = d.daytime.mirageScore;
