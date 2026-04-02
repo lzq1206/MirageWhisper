@@ -167,6 +167,141 @@ function formatDateLabel(iso) {
   return new Date(iso).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' });
 }
 
+function tempToColor(temp, minTemp, maxTemp) {
+  if (temp == null || Number.isNaN(temp)) return 'rgba(80, 90, 110, 0.25)';
+  const t = clamp((temp - minTemp) / Math.max(1e-6, maxTemp - minTemp), 0, 1);
+  const hue = 240 - 240 * t; // blue -> red
+  const light = 42 + 16 * (1 - Math.abs(t - 0.5) * 2);
+  return `hsl(${hue.toFixed(1)} 90% ${light.toFixed(1)}%)`;
+}
+
+function buildDayProfileFromHourly(hourly, day) {
+  const altitudes = LEVELS.map(pressureToAltitudeM);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const grid = altitudes.map(() => Array(24).fill(null));
+
+  for (let h = 0; h < 24; h += 1) {
+    const hourText = String(h).padStart(2, '0');
+    const idx = (hourly.time || []).findIndex((t) => t.startsWith(day) && t.slice(11, 13) === hourText);
+    if (idx < 0) continue;
+    for (let li = 0; li < LEVELS.length; li += 1) {
+      grid[li][h] = hourly[`temperature_${LEVELS[li]}hPa`]?.[idx] ?? null;
+    }
+  }
+
+  const temps = grid.flat().filter((v) => Number.isFinite(v));
+  return {
+    day,
+    hours,
+    altitudes,
+    grid,
+    minTemp: temps.length ? Math.min(...temps) : null,
+    maxTemp: temps.length ? Math.max(...temps) : null,
+  };
+}
+
+function buildSyntheticDayProfile(city, day, baseM, topM, centerDiff, persistence) {
+  const altitudes = LEVELS.map(pressureToAltitudeM);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const grid = altitudes.map(() => Array(24).fill(null));
+  const latBias = clamp((city.lat - 20) / 20, 0, 1);
+  const coastalBias = city.coastal ? 1 : 0;
+  const seedBase = [...String(city.id), ...String(day)].reduce((acc, ch, idx) => acc + ch.charCodeAt(0) * (idx + 1), 0);
+
+  for (let h = 0; h < 24; h += 1) {
+    const diurnal = Math.cos(((h - 15) / 24) * Math.PI * 2) * (2.2 - latBias * 0.8);
+    const surface = 21 - latBias * 8 + coastalBias * 1.2 + diurnal + (seededValue(seedBase + h * 7) - 0.5) * 0.8;
+    const peakKm = ((baseM + topM) / 2) / 1000;
+    const widthKm = Math.max(0.35, (topM - baseM) / 1000);
+    for (let li = 0; li < altitudes.length; li += 1) {
+      const altKm = altitudes[li] / 1000;
+      const lapse = 5.8 + li * 0.7;
+      const bump = centerDiff * Math.exp(-Math.pow((altKm - peakKm) / widthKm, 2));
+      const coolTop = Math.max(0, altKm - peakKm) * (1.2 + latBias * 0.3);
+      grid[li][h] = surface - lapse * altKm + bump - coolTop + persistence * 0.3;
+    }
+  }
+
+  const temps = grid.flat().filter((v) => Number.isFinite(v));
+  return {
+    day,
+    hours,
+    altitudes,
+    grid,
+    minTemp: temps.length ? Math.min(...temps) : null,
+    maxTemp: temps.length ? Math.max(...temps) : null,
+  };
+}
+
+function renderTemperatureHeatmap(cityData) {
+  const root = document.getElementById('temperatureHeatmap');
+  const note = document.getElementById('heatmapMeta');
+  if (!root || !cityData) return;
+
+  const day = cityData.daily?.[0];
+  const profile = day?.profile || null;
+  if (!profile?.grid?.length) {
+    root.innerHTML = '<div class="heatmap-empty">暂无剖面数据</div>';
+    if (note) note.textContent = '当前城市没有可用的小时级分层温度数据。';
+    return;
+  }
+
+  const width = 980;
+  const height = 420;
+  const padL = 70;
+  const padR = 16;
+  const padT = 24;
+  const padB = 34;
+  const plotW = width - padL - padR;
+  const plotH = height - padT - padB;
+  const cellW = plotW / 24;
+  const cellH = plotH / profile.altitudes.length;
+  const minTemp = profile.minTemp ?? 0;
+  const maxTemp = profile.maxTemp ?? 1;
+  const altLabels = profile.altitudes.map((m) => `${Math.round(m)}m`);
+  const hourLabels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
+
+  const cells = [];
+  for (let r = 0; r < profile.altitudes.length; r += 1) {
+    for (let c = 0; c < 24; c += 1) {
+      const temp = profile.grid[r][c];
+      const x = padL + c * cellW;
+      const y = padT + r * cellH;
+      cells.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(cellW + 0.6).toFixed(1)}" height="${(cellH + 0.6).toFixed(1)}" fill="${tempToColor(temp, minTemp, maxTemp)}"></rect>`);
+    }
+  }
+
+  const xTicks = hourLabels.filter((_, h) => h % 3 === 0).map((label, h) => {
+    const x = padL + h * 3 * cellW + 2;
+    return `<text x="${x.toFixed(1)}" y="${height - 10}" class="heatmap-axis">${label}</text>`;
+  }).join('');
+
+  const yTicks = altLabels.map((label, i) => {
+    const y = padT + i * cellH + cellH / 2 + 4;
+    return `<text x="${padL - 10}" y="${y.toFixed(1)}" text-anchor="end" class="heatmap-axis">${label}</text>`;
+  }).join('');
+
+  const legend = [minTemp, (minTemp + maxTemp) / 2, maxTemp].map((v, idx) => {
+    const x = padL + idx * (plotW / 2);
+    return `<text x="${x.toFixed(1)}" y="18" class="heatmap-axis">${fmt(v, 1)}°C</text>`;
+  }).join('');
+
+  root.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="heatmap-svg" role="img" aria-label="时间海拔温度热图">
+      <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)"></rect>
+      ${cells.join('')}
+      ${xTicks}
+      ${yTicks}
+      ${legend}
+      <text x="${padL}" y="${padT - 6}" class="heatmap-title">${day ? formatDateLabel(day.day) : ''} · 时间-海拔温度剖面</text>
+    </svg>
+  `;
+
+  if (note) {
+    note.textContent = `横轴为时间，纵轴为海拔；颜色从蓝到红表示温度从低到高。当前剖面：${day ? formatDateLabel(day.day) : '—'}。`;
+  }
+}
+
 async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -203,6 +338,26 @@ function renderCityOptions(groups) {
       ${renderOptions(groups.coastalMajor)}
     </optgroup>
   `;
+}
+
+function ensureHeatmapProfiles(cityData) {
+  if (!cityData?.daily?.length) return cityData;
+  if (cityData.daily.some((day) => day.profile)) return cityData;
+  const city = cityData.city;
+  return {
+    ...cityData,
+    daily: cityData.daily.map((day) => ({
+      ...day,
+      profile: buildSyntheticDayProfile(
+        city,
+        day.day,
+        day.daytime?.window?.best?.baseM ?? 180,
+        day.daytime?.window?.best?.topM ?? 620,
+        day.daytime?.window?.best?.centerDiffCPerKm ?? 1.2,
+        day.daytime?.window?.persistence ?? 0.2,
+      ),
+    })),
+  };
 }
 
 async function mapLimit(items, limit, mapper) {
@@ -336,6 +491,7 @@ function buildSyntheticForecast(city, startDate = new Date()) {
         seaContrast,
       },
       bestGreenScore: Math.max(sunriseGreen, sunsetGreen),
+      profile: buildSyntheticDayProfile(city, day.toISOString().slice(0, 10), baseM, topM, centerDiff, persistence),
       source: 'synthetic-fallback',
     });
   }
@@ -448,6 +604,7 @@ function buildCityForecast(city, gfs, marine) {
         seaContrast,
       },
       bestGreenScore: Math.max(sunriseGreenScore, sunsetGreenScore),
+      profile: buildDayProfileFromHourly(hourly, day),
     });
   }
 
@@ -522,10 +679,12 @@ function renderRanking() {
 
 function renderCity(cityData) {
   const city = cityData.city;
+  const safeCityData = ensureHeatmapProfiles(cityData);
   cityTitleEl.textContent = `${city.name} · 未来 7 天峰值型逆温与海市蜃楼/绿闪倾向`;
   cityMetaEl.textContent = `${city.coastal ? '沿海城市' : '内陆对照'} · 单格点坐标 ${city.lat.toFixed(2)}, ${city.lon.toFixed(2)} · 逆温口径：单点剖面低温→高温→低温峰值型 · 海温${city.coastal ? '已尝试接入' : '不适用'}`;
+  renderTemperatureHeatmap(safeCityData);
 
-  dailyCardsEl.innerHTML = cityData.daily.map((d) => {
+  dailyCardsEl.innerHTML = safeCityData.daily.map((d) => {
     const dayMetric = d.daytime.mirageScore;
     const sunriseInv = d.sunrise.lowInversion || d.sunrise.inversion;
     const sunsetInv = d.sunset.lowInversion || d.sunset.inversion;
@@ -575,7 +734,8 @@ async function load() {
       const cachedMap = new Map(cached.map((item) => [item.city?.id ?? item.city?.name, item]));
       allCityData = displayCatalog.merged
         .map((city) => cachedMap.get(city.id))
-        .filter(Boolean);
+        .filter(Boolean)
+        .map((cityData) => ensureHeatmapProfiles(cityData));
       if (!allCityData.length) {
         allCityData = displayCatalog.merged.map((city) => buildSyntheticForecast(city));
       }

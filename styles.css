@@ -68,6 +68,34 @@ label { display: flex; gap: 8px; align-items: center; color: var(--muted); }
 .kpi-value { font-size: 22px; font-weight: 700; margin-top: 6px; }
 .kpi-sub { color: #c8d6f5; font-size: 12px; margin-top: 6px; }
 .city-meta { color: var(--muted); margin-top: 4px; font-size: 13px; }
+.profile-block {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.02);
+}
+.profile-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.profile-head h3 { margin: 0; font-size: 16px; }
+.profile-meta { color: var(--muted); font-size: 12px; }
+.heatmap-wrap { width: 100%; overflow-x: auto; }
+.heatmap-svg { width: 100%; height: auto; display: block; }
+.heatmap-axis { fill: var(--muted); font-size: 11px; }
+.heatmap-title { fill: var(--txt); font-size: 12px; font-weight: 700; }
+.heatmap-empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
 .daily-cards {
   margin-top: 12px;
   display: grid;
