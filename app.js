@@ -246,20 +246,76 @@ function renderTemperatureHeatmap(cityData) {
     return;
   }
 
-  const width = 980;
-  const height = 420;
-  const padL = 70;
-  const padR = 16;
-  const padT = 24;
-  const padB = 34;
+  const width = 1040;
+  const height = 560;
+  const padL = 86;
+  const padR = 24;
+  const padT = 34;
+  const padB = 44;
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
   const cellW = plotW / 24;
   const cellH = plotH / profile.altitudes.length;
   const minTemp = profile.minTemp ?? 0;
   const maxTemp = profile.maxTemp ?? 1;
+  const minAlt = profile.altitudes[0];
+  const maxAlt = profile.altitudes[profile.altitudes.length - 1];
   const altLabels = profile.altitudes.map((m) => `${Math.round(m)}m`);
   const hourLabels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
+  const contours = [];
+  const contourStart = Math.floor(minTemp / 2) * 2;
+  const contourEnd = Math.ceil(maxTemp / 2) * 2;
+
+  const altitudeToY = (alt) => padT + (1 - (alt - minAlt) / Math.max(1, maxAlt - minAlt)) * plotH;
+  const hourToX = (h) => padL + h * cellW + cellW / 2;
+  const contourAltitudeAtHour = (targetTemp, hourIdx, prevAlt) => {
+    const samples = [];
+    for (let r = 0; r < profile.altitudes.length - 1; r += 1) {
+      const a1 = profile.altitudes[r];
+      const a2 = profile.altitudes[r + 1];
+      const t1 = profile.grid[r][hourIdx];
+      const t2 = profile.grid[r + 1][hourIdx];
+      if (!Number.isFinite(t1) || !Number.isFinite(t2)) continue;
+      const crosses = (t1 - targetTemp) * (t2 - targetTemp) <= 0;
+      if (!crosses) continue;
+      const ratio = Math.abs(t2 - t1) < 1e-6 ? 0.5 : (targetTemp - t1) / (t2 - t1);
+      const alt = a1 + clamp(ratio, 0, 1) * (a2 - a1);
+      samples.push(alt);
+    }
+    if (!samples.length) return null;
+    if (prevAlt == null) return samples[0];
+    samples.sort((a, b) => Math.abs(a - prevAlt) - Math.abs(b - prevAlt));
+    return samples[0];
+  };
+
+  const buildContourPath = (targetTemp) => {
+    let d = '';
+    let prevAlt = null;
+    let drawing = false;
+    for (let h = 0; h < 24; h += 1) {
+      const alt = contourAltitudeAtHour(targetTemp, h, prevAlt);
+      if (alt == null) {
+        drawing = false;
+        prevAlt = null;
+        continue;
+      }
+      const x = hourToX(h);
+      const y = altitudeToY(alt);
+      if (!drawing) {
+        d += `M ${x.toFixed(1)} ${y.toFixed(1)} `;
+        drawing = true;
+      } else {
+        d += `L ${x.toFixed(1)} ${y.toFixed(1)} `;
+      }
+      prevAlt = alt;
+    }
+    return d.trim();
+  };
+
+  for (let t = contourStart; t <= contourEnd; t += 2) {
+    const path = buildContourPath(t);
+    if (path) contours.push({ temp: t, path });
+  }
 
   const cells = [];
   for (let r = 0; r < profile.altitudes.length; r += 1) {
@@ -267,38 +323,59 @@ function renderTemperatureHeatmap(cityData) {
       const temp = profile.grid[r][c];
       const x = padL + c * cellW;
       const y = padT + r * cellH;
-      cells.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(cellW + 0.6).toFixed(1)}" height="${(cellH + 0.6).toFixed(1)}" fill="${tempToColor(temp, minTemp, maxTemp)}"></rect>`);
+      const opacity = temp == null ? 0.08 : 0.92;
+      cells.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(cellW + 0.7).toFixed(1)}" height="${(cellH + 0.7).toFixed(1)}" fill="${tempToColor(temp, minTemp, maxTemp)}" fill-opacity="${opacity.toFixed(2)}"></rect>`);
     }
   }
 
   const xTicks = hourLabels.filter((_, h) => h % 3 === 0).map((label, h) => {
     const x = padL + h * 3 * cellW + 2;
-    return `<text x="${x.toFixed(1)}" y="${height - 10}" class="heatmap-axis">${label}</text>`;
+    return `<g><line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${padT + plotH}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 5"/><text x="${x.toFixed(1)}" y="${height - 14}" class="heatmap-axis">${label}</text></g>`;
   }).join('');
 
   const yTicks = altLabels.map((label, i) => {
     const y = padT + i * cellH + cellH / 2 + 4;
-    return `<text x="${padL - 10}" y="${y.toFixed(1)}" text-anchor="end" class="heatmap-axis">${label}</text>`;
+    return `<g><line x1="${padL}" y1="${y.toFixed(1)}" x2="${padL + plotW}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.05)"/><text x="${padL - 10}" y="${y.toFixed(1)}" text-anchor="end" class="heatmap-axis">${label}</text></g>`;
   }).join('');
 
-  const legend = [minTemp, (minTemp + maxTemp) / 2, maxTemp].map((v, idx) => {
-    const x = padL + idx * (plotW / 2);
-    return `<text x="${x.toFixed(1)}" y="18" class="heatmap-axis">${fmt(v, 1)}°C</text>`;
+  const contourSvg = contours.map(({ temp, path }) => {
+    const color = temp >= 0 ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.18)';
+    return `<g><path d="${path}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><text x="${padL + 4}" y="${altitudeToY(profile.altitudes[0]) - 6}" class="heatmap-axis">${temp}°</text></g>`;
+  }).join('');
+
+  const legendStops = [
+    { temp: minTemp, label: '冷' },
+    { temp: (minTemp + maxTemp) / 2, label: '中' },
+    { temp: maxTemp, label: '热' },
+  ].map((item) => {
+    const c = tempToColor(item.temp, minTemp, maxTemp);
+    return `<div class="heatmap-legend-item"><span class="heatmap-swatch" style="background:${c}"></span><span>${item.label} ${fmt(item.temp, 1)}°C</span></div>`;
   }).join('');
 
   root.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" class="heatmap-svg" role="img" aria-label="时间海拔温度热图">
-      <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)"></rect>
-      ${cells.join('')}
-      ${xTicks}
-      ${yTicks}
-      ${legend}
-      <text x="${padL}" y="${padT - 6}" class="heatmap-title">${day ? formatDateLabel(day.day) : ''} · 时间-海拔温度剖面</text>
-    </svg>
+    <div class="heatmap-frame">
+      <svg viewBox="0 0 ${width} ${height}" class="heatmap-svg" role="img" aria-label="时间海拔温度剖面图">
+        <defs>
+          <linearGradient id="heatfade" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.03)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
+          </linearGradient>
+        </defs>
+        <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" rx="18" fill="url(#heatfade)" stroke="rgba(255,255,255,0.09)"></rect>
+        ${cells.join('')}
+        ${xTicks}
+        ${yTicks}
+        ${contourSvg}
+        <text x="${padL}" y="${padT - 10}" class="heatmap-title">${day ? formatDateLabel(day.day) : ''} · 时间-海拔温度剖面</text>
+        <text x="${padL}" y="${height - 6}" class="heatmap-axis">时间</text>
+        <text x="12" y="${padT + plotH / 2}" class="heatmap-axis" transform="rotate(-90 12 ${padT + plotH / 2})">海拔</text>
+      </svg>
+      <div class="heatmap-legend">${legendStops}</div>
+    </div>
   `;
 
   if (note) {
-    note.textContent = `横轴为时间，纵轴为海拔；颜色从蓝到红表示温度从低到高。当前剖面：${day ? formatDateLabel(day.day) : '—'}。`;
+    note.textContent = `横轴为时间，纵轴为海拔；颜色从蓝到红表示温度从低到高，并叠加等温线。当前剖面：${day ? formatDateLabel(day.day) : '—'}。`;
   }
 }
 
