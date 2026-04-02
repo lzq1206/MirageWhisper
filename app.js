@@ -168,11 +168,18 @@ function formatDateLabel(iso) {
 }
 
 function tempToColor(temp, minTemp, maxTemp) {
-  if (temp == null || Number.isNaN(temp)) return 'rgba(80, 90, 110, 0.25)';
+  if (temp == null || Number.isNaN(temp)) return 'rgba(80, 90, 110, 0.22)';
+  const bands = [
+    '#173b8f',
+    '#245fbf',
+    '#2f8fe3',
+    '#f2c44f',
+    '#f07d2d',
+    '#d94b3d',
+  ];
   const t = clamp((temp - minTemp) / Math.max(1e-6, maxTemp - minTemp), 0, 1);
-  const hue = 240 - 240 * t; // blue -> red
-  const light = 42 + 16 * (1 - Math.abs(t - 0.5) * 2);
-  return `hsl(${hue.toFixed(1)} 90% ${light.toFixed(1)}%)`;
+  const idx = Math.min(bands.length - 1, Math.floor(t * bands.length));
+  return bands[idx];
 }
 
 function buildDayProfileFromHourly(hourly, day) {
@@ -343,25 +350,19 @@ function renderTemperatureHeatmap(cityData) {
     return `<g><path d="${path}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><text x="${padL + 4}" y="${altitudeToY(profile.altitudes[0]) - 6}" class="heatmap-axis">${temp}°</text></g>`;
   }).join('');
 
-  const legendStops = [
-    { temp: minTemp, label: '冷' },
-    { temp: (minTemp + maxTemp) / 2, label: '中' },
-    { temp: maxTemp, label: '热' },
-  ].map((item) => {
-    const c = tempToColor(item.temp, minTemp, maxTemp);
-    return `<div class="heatmap-legend-item"><span class="heatmap-swatch" style="background:${c}"></span><span>${item.label} ${fmt(item.temp, 1)}°C</span></div>`;
+  const bandLabels = ['极冷', '偏冷', '微冷', '微暖', '偏暖', '极暖'];
+  const bandTemps = Array.from({ length: 6 }, (_, i) => minTemp + (i + 0.5) * ((maxTemp - minTemp) / 6));
+  const legendStops = bandLabels.map((label, i) => {
+    const c = tempToColor(bandTemps[i], minTemp, maxTemp);
+    const low = minTemp + (i * (maxTemp - minTemp)) / 6;
+    const high = minTemp + ((i + 1) * (maxTemp - minTemp)) / 6;
+    return `<div class="heatmap-legend-item"><span class="heatmap-swatch" style="background:${c}"></span><span>${label} ${fmt(low, 1)}–${fmt(high, 1)}°C</span></div>`;
   }).join('');
 
   root.innerHTML = `
     <div class="heatmap-frame">
       <svg viewBox="0 0 ${width} ${height}" class="heatmap-svg" role="img" aria-label="时间海拔温度剖面图">
-        <defs>
-          <linearGradient id="heatfade" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="rgba(255,255,255,0.03)"/>
-            <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
-          </linearGradient>
-        </defs>
-        <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" rx="18" fill="url(#heatfade)" stroke="rgba(255,255,255,0.09)"></rect>
+        <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" rx="18" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.09)"></rect>
         ${cells.join('')}
         ${xTicks}
         ${yTicks}
