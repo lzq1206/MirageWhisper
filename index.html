@@ -31,10 +31,11 @@
         <select id="citySelect"></select>
       </label>
       <label>
-        时间窗
+        关注窗口
         <select id="eventType">
-          <option value="sunset">日落（海市蜃楼 + 绿闪）</option>
-          <option value="sunrise">日出（以绿闪为主）</option>
+          <option value="daytime">白天（海市蜃楼）</option>
+          <option value="sunrise">日出（绿闪）</option>
+          <option value="sunset">日落（绿闪）</option>
         </select>
       </label>
     </section>
@@ -51,8 +52,8 @@
     </section>
 
     <footer class="footer">
-      <div>数据源：Open-Meteo GFS（多气压层温度 + 云量 + 日出日落）</div>
-      <div>说明：本页面为业务判别模型，适合选点与摄影窗口参考，不替代专业光学模拟。</div>
+      <div>数据源：Open-Meteo GFS（多气压层温度 + 云量 + 日出日落） + Marine（海温，沿海城市尽量接入）</div>
+      <div>说明：白天海市蜃楼重点看低空逆温，绿闪则同时关注日出和日落方向的逆温条件。</div>
     </footer>
   </div>
 
