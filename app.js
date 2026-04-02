@@ -3,6 +3,10 @@ const LEVELS = [1000, 925, 850, 700, 600, 500];
 const GFS_URL = 'https://api.open-meteo.com/v1/gfs';
 const MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine';
 const CITY_CONCURRENCY = 6;
+const INVERSION_MIN_CENTER_DIFF = 2.5;
+const INVERSION_MIN_EDGE_GRAD = 2.0;
+const INVERSION_MIN_TEMP_JUMP = 1.2;
+const INVERSION_MIN_THICKNESS_M = 350;
 
 const citySelect = document.getElementById('citySelect');
 const eventTypeSelect = document.getElementById('eventType');
@@ -79,16 +83,27 @@ function detectInversionSegments(tempByLevel) {
     const downGrad = gradientCPerKm(tMid, tNext, pMid, pNext);
 
     // 口径：必须形成低温-高温-低温的夹层峰值，才算逆温层。
-    if (upGrad != null && downGrad != null && upGrad > 0 && downGrad < 0) {
+    const tempJumpUp = tMid - tPrev;
+    const tempJumpDown = tMid - tNext;
+    if (
+      upGrad != null &&
+      downGrad != null &&
+      upGrad >= INVERSION_MIN_EDGE_GRAD &&
+      Math.abs(downGrad) >= INVERSION_MIN_EDGE_GRAD &&
+      tempJumpUp >= INVERSION_MIN_TEMP_JUMP &&
+      tempJumpDown >= INVERSION_MIN_TEMP_JUMP
+    ) {
       const baseM = pressureToAltitudeM(pPrev);
       const peakM = pressureToAltitudeM(pMid);
       const topM = pressureToAltitudeM(pNext);
       const centerDiffCPerKm = (upGrad + Math.abs(downGrad)) / 2;
+      const thicknessM = topM - baseM;
+      if (centerDiffCPerKm < INVERSION_MIN_CENTER_DIFF || thicknessM < INVERSION_MIN_THICKNESS_M) continue;
       segments.push({
         baseM,
         peakM,
         topM,
-        thicknessM: topM - baseM,
+        thicknessM,
         strengthCPerKm: Math.max(upGrad, Math.abs(downGrad)),
         centerDiffCPerKm,
         lowLevel: baseM <= 1500,
