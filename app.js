@@ -15,6 +15,7 @@ const dailyCardsEl = document.getElementById('dailyCards');
 const rankingEl = document.getElementById('ranking');
 
 let cityCatalog = [];
+let displayCatalog = [];
 let allCityData = [];
 
 function fmt(n, d = 1) {
@@ -65,21 +66,29 @@ function gradientCPerKm(t1, t2, p1, p2) {
 
 function detectInversionSegments(tempByLevel) {
   const segments = [];
-  for (let i = 0; i < LEVELS.length - 1; i += 1) {
-    const p1 = LEVELS[i];
-    const p2 = LEVELS[i + 1];
-    const t1 = tempByLevel[p1];
-    const t2 = tempByLevel[p2];
-    if (t1 == null || t2 == null) continue;
-    const grad = gradientCPerKm(t1, t2, p1, p2);
-    if (grad != null && grad > 0) {
-      const baseM = pressureToAltitudeM(p1);
-      const topM = pressureToAltitudeM(p2);
+  for (let i = 1; i < LEVELS.length - 1; i += 1) {
+    const pPrev = LEVELS[i - 1];
+    const pMid = LEVELS[i];
+    const pNext = LEVELS[i + 1];
+    const tPrev = tempByLevel[pPrev];
+    const tMid = tempByLevel[pMid];
+    const tNext = tempByLevel[pNext];
+    if (tPrev == null || tMid == null || tNext == null) continue;
+
+    const upGrad = gradientCPerKm(tPrev, tMid, pPrev, pMid);
+    const downGrad = gradientCPerKm(tMid, tNext, pMid, pNext);
+
+    // 口径：必须形成低温-高温-低温的夹层峰值，才算逆温层。
+    if (upGrad != null && downGrad != null && upGrad > 0 && downGrad < 0) {
+      const baseM = pressureToAltitudeM(pPrev);
+      const peakM = pressureToAltitudeM(pMid);
+      const topM = pressureToAltitudeM(pNext);
       segments.push({
         baseM,
+        peakM,
         topM,
         thicknessM: topM - baseM,
-        strengthCPerKm: grad,
+        strengthCPerKm: Math.max(upGrad, Math.abs(downGrad)),
         lowLevel: baseM <= 1500,
       });
     }
@@ -169,6 +178,30 @@ async function loadCityCatalog() {
   return cityCatalog;
 }
 
+function buildDisplayCatalog(catalog) {
+  const topPopulation = catalog.slice(0, 50);
+  const coastalMajor = catalog.filter((city) => city.coastal && !topPopulation.some((x) => x.id === city.id));
+  const byId = new Map();
+  for (const city of [...topPopulation, ...coastalMajor]) byId.set(city.id, city);
+  return {
+    topPopulation,
+    coastalMajor,
+    merged: [...byId.values()],
+  };
+}
+
+function renderCityOptions(groups) {
+  const renderOptions = (items) => items.map((c) => `<option value="${c.id}">${c.name}${c.coastal ? ' · 沿海' : ''}</option>`).join('');
+  citySelect.innerHTML = `
+    <optgroup label="人口前 50">
+      ${renderOptions(groups.topPopulation)}
+    </optgroup>
+    <optgroup label="沿海主要城市（补充）">
+      ${renderOptions(groups.coastalMajor)}
+    </optgroup>
+  `;
+}
+
 async function mapLimit(items, limit, mapper) {
   const results = new Array(items.length);
   let index = 0;
@@ -240,12 +273,14 @@ function buildSyntheticForecast(city, startDate = new Date()) {
         time: sunrise,
         inversion: {
           baseM: baseM * 0.9,
+          peakM: (baseM + topM) / 2,
           topM: topM * 0.95,
           thicknessM: Math.max(120, topM - baseM),
           strengthCPerKm: Math.max(0.3, meanStrength + 0.3),
         },
         lowInversion: {
           baseM,
+          peakM: (baseM + topM) / 2,
           topM,
           thicknessM: topM - baseM,
           strengthCPerKm: meanStrength,
@@ -257,12 +292,14 @@ function buildSyntheticForecast(city, startDate = new Date()) {
         time: sunset,
         inversion: {
           baseM: baseM * 0.95,
+          peakM: (baseM + topM) / 2,
           topM: topM * 1.02,
           thicknessM: Math.max(120, topM - baseM),
           strengthCPerKm: Math.max(0.3, meanStrength + 0.2),
         },
         lowInversion: {
           baseM,
+          peakM: (baseM + topM) / 2,
           topM,
           thicknessM: topM - baseM,
           strengthCPerKm: meanStrength,
@@ -274,6 +311,7 @@ function buildSyntheticForecast(city, startDate = new Date()) {
         window: {
           best: {
             baseM,
+            peakM: (baseM + topM) / 2,
             topM,
             thicknessM: topM - baseM,
             strengthCPerKm: meanStrength,
@@ -475,8 +513,8 @@ function renderRanking() {
 
 function renderCity(cityData) {
   const city = cityData.city;
-  cityTitleEl.textContent = `${city.name} · 未来 7 天逆温与海市蜃楼/绿闪倾向`;
-  cityMetaEl.textContent = `${city.coastal ? '沿海城市' : '内陆对照'} · 坐标 ${city.lat.toFixed(2)}, ${city.lon.toFixed(2)} · 海温${city.coastal ? '已尝试接入' : '不适用'}`;
+  cityTitleEl.textContent = `${city.name} · 未来 7 天峰值型逆温与海市蜃楼/绿闪倾向`;
+  cityMetaEl.textContent = `${city.coastal ? '沿海城市' : '内陆对照'} · 坐标 ${city.lat.toFixed(2)}, ${city.lon.toFixed(2)} · 逆温口径：低温→高温→低温峰值型 · 海温${city.coastal ? '已尝试接入' : '不适用'}`;
 
   dailyCardsEl.innerHTML = cityData.daily.map((d) => {
     const dayMetric = d.daytime.mirageScore;
@@ -487,8 +525,8 @@ function renderCity(cityData) {
     const sunsetLv = levelLabel(d.sunset.greenScore);
 
     const invText = d.daytime.window.best
-      ? `${fmt(d.daytime.window.best.baseM, 0)} m → ${fmt(d.daytime.window.best.topM, 0)} m · ${fmt(d.daytime.window.best.strengthCPerKm, 2)} °C/km`
-      : '无明显低空逆温';
+      ? `${fmt(d.daytime.window.best.baseM, 0)} m → 峰值 ${fmt(d.daytime.window.best.peakM, 0)} m → ${fmt(d.daytime.window.best.topM, 0)} m · ${fmt(d.daytime.window.best.strengthCPerKm, 2)} °C/km`
+      : '无明显峰值型逆温';
 
     return `
       <article class="card">
@@ -520,32 +558,35 @@ async function load() {
   refreshBtn.disabled = true;
   try {
     const catalog = await loadCityCatalog();
-    citySelect.innerHTML = catalog
-      .map((c) => `<option value="${c.id}">${c.name}${c.coastal ? ' · 沿海' : ''}</option>`)
-      .join('');
+    displayCatalog = buildDisplayCatalog(catalog);
+    renderCityOptions(displayCatalog);
 
     const cached = await loadStaticForecast();
     if (cached?.length) {
-      allCityData = cached;
+      const cachedMap = new Map(cached.map((item) => [item.city?.id ?? item.city?.name, item]));
+      allCityData = displayCatalog.merged
+        .map((city) => cachedMap.get(city.id))
+        .filter(Boolean);
+      if (!allCityData.length) {
+        allCityData = displayCatalog.merged.map((city) => buildSyntheticForecast(city));
+      }
       if (!citySelect.value) citySelect.value = allCityData[0].city.id;
       updateAllViews();
       statusEl.textContent = `已加载缓存数据：${new Date().toLocaleString('zh-CN', { hour12: false })}`;
       return;
     }
 
-    const synthetic = catalog.map((city) => buildSyntheticForecast(city));
-    allCityData = synthetic;
+    allCityData = displayCatalog.merged.map((city) => buildSyntheticForecast(city));
     if (!citySelect.value) citySelect.value = allCityData[0].city.id;
     updateAllViews();
-    statusEl.textContent = `已启用离线估计（Open-Meteo 当前限流，${catalog.length} 城市可用）`;
+    statusEl.textContent = `已启用离线估计（人口前 50 + 沿海主要城市，${displayCatalog.merged.length} 城市可用）`;
   } catch (err) {
     console.error(err);
     try {
       const catalog = await loadCityCatalog();
-      allCityData = catalog.map((city) => buildSyntheticForecast(city));
-      citySelect.innerHTML = catalog
-        .map((c) => `<option value="${c.id}">${c.name}${c.coastal ? ' · 沿海' : ''}</option>`)
-        .join('');
+      displayCatalog = buildDisplayCatalog(catalog);
+      renderCityOptions(displayCatalog);
+      allCityData = displayCatalog.merged.map((city) => buildSyntheticForecast(city));
       if (!citySelect.value) citySelect.value = allCityData[0].city.id;
       updateAllViews();
       statusEl.textContent = `加载失败，已切换为离线估计：${err.message}`;
