@@ -83,12 +83,14 @@ function detectInversionSegments(tempByLevel) {
       const baseM = pressureToAltitudeM(pPrev);
       const peakM = pressureToAltitudeM(pMid);
       const topM = pressureToAltitudeM(pNext);
+      const centerDiffCPerKm = (upGrad + Math.abs(downGrad)) / 2;
       segments.push({
         baseM,
         peakM,
         topM,
         thicknessM: topM - baseM,
         strengthCPerKm: Math.max(upGrad, Math.abs(downGrad)),
+        centerDiffCPerKm,
         lowLevel: baseM <= 1500,
       });
     }
@@ -141,12 +143,13 @@ function scanWindow(hourly, startTime, endTime) {
 }
 
 function scoreDayMirage(dayWindow, seaContrast, seaTemp, isCoastal) {
-  const strength = Math.min(1, (dayWindow.meanStrength || 0) / 10);
-  const lowBase = dayWindow.lowestBase == null ? 0 : clamp(1 - dayWindow.lowestBase / 1500, 0, 1);
-  const persist = clamp(dayWindow.persistence, 0, 1);
-  const marineBoost = isCoastal ? clamp((seaContrast || 0) / 8, 0, 1) * 12 : 0;
-  const seaWarmBoost = isCoastal && seaTemp != null ? clamp((seaTemp - 10) / 20, 0, 1) * 4 : 0;
-  return Math.round(45 * strength + 30 * lowBase + 15 * persist + marineBoost + seaWarmBoost);
+  const centerDiff = clamp((dayWindow.best?.centerDiffCPerKm || 0) - 1.8, 0, 6) / 6;
+  const lowBase = dayWindow.lowestBase == null ? 0 : clamp(1 - dayWindow.lowestBase / 1800, 0, 1);
+  const persist = clamp((dayWindow.persistence || 0) - 0.15, 0, 0.75) / 0.75;
+  const marineBoost = isCoastal ? clamp((seaContrast || 0) - 1.5, 0, 6) / 6 * 0.08 : 0;
+  const seaWarmBoost = isCoastal && seaTemp != null ? clamp((seaTemp - 12) / 18, 0, 1) * 0.04 : 0;
+  const raw = 0.58 * centerDiff + 0.22 * lowBase + 0.16 * persist + marineBoost + seaWarmBoost;
+  return Math.round(clamp(raw * 100, 0, 100));
 }
 
 function scoreGreenFlash(inv, cloudCover, baseBias = 0) {
@@ -254,14 +257,15 @@ function buildSyntheticForecast(city, startDate = new Date()) {
     const sunrise = makeIso(day, Math.max(5, Math.min(7, sunriseHour)), 20 + Math.round(rng(1) * 20));
     const sunset = makeIso(day, Math.max(17, Math.min(19, sunsetHour)), 10 + Math.round(rng(2) * 30));
 
-    const strengthBase = 0.8 + coastalBias * 1.4 + latBias * 0.8 + season * 0.7 + rng(3) * 0.8;
-    const baseM = 120 + Math.round(rng(4) * 900 + (1 - coastalBias) * 250);
-    const topM = baseM + 180 + Math.round(rng(5) * 420);
-    const persistence = clamp(0.15 + coastalBias * 0.35 + latBias * 0.2 + rng(6) * 0.25, 0, 0.95);
-    const meanStrength = strengthBase + rng(7) * 1.7;
-    const mirageScore = Math.round(clamp(22 + 28 * coastalBias + 18 * latBias + 18 * persistence + 12 * meanStrength, 0, 100));
-    const sunriseGreen = Math.round(clamp(10 + 22 * coastalBias + 18 * persistence + 18 * rng(8), 0, 100));
-    const sunsetGreen = Math.round(clamp(12 + 20 * coastalBias + 16 * persistence + 18 * rng(9), 0, 100));
+    const strengthBase = 0.6 + coastalBias * 0.8 + latBias * 0.5 + season * 0.3 + rng(3) * 0.6;
+    const baseM = 180 + Math.round(rng(4) * 1000 + (1 - coastalBias) * 180);
+    const topM = baseM + 140 + Math.round(rng(5) * 320);
+    const persistence = clamp(0.08 + coastalBias * 0.22 + latBias * 0.12 + rng(6) * 0.18, 0, 0.8);
+    const meanStrength = strengthBase + rng(7) * 1.0;
+    const centerDiff = clamp(meanStrength + rng(13) * 0.8, 0.2, 5.5);
+    const mirageScore = Math.round(clamp(10 + 16 * coastalBias + 10 * latBias + 18 * persistence + 9 * centerDiff, 0, 100));
+    const sunriseGreen = Math.round(clamp(6 + 10 * coastalBias + 12 * persistence + 14 * rng(8), 0, 100));
+    const sunsetGreen = Math.round(clamp(8 + 10 * coastalBias + 10 * persistence + 14 * rng(9), 0, 100));
     const sunriseCloud = Math.round(clamp(35 + 30 * rng(10) - 12 * coastalBias, 0, 100));
     const sunsetCloud = Math.round(clamp(35 + 28 * rng(11) - 10 * coastalBias, 0, 100));
     const seaTemp = city.coastal ? Math.round((12 + 18 * season + rng(12) * 5) * 10) / 10 : null;
@@ -276,7 +280,8 @@ function buildSyntheticForecast(city, startDate = new Date()) {
           peakM: (baseM + topM) / 2,
           topM: topM * 0.95,
           thicknessM: Math.max(120, topM - baseM),
-          strengthCPerKm: Math.max(0.3, meanStrength + 0.3),
+          strengthCPerKm: Math.max(0.3, meanStrength + 0.2),
+          centerDiffCPerKm: centerDiff,
         },
         lowInversion: {
           baseM,
@@ -284,6 +289,7 @@ function buildSyntheticForecast(city, startDate = new Date()) {
           topM,
           thicknessM: topM - baseM,
           strengthCPerKm: meanStrength,
+          centerDiffCPerKm: centerDiff,
         },
         cloudCover: sunriseCloud,
         greenScore: sunriseGreen,
@@ -295,7 +301,8 @@ function buildSyntheticForecast(city, startDate = new Date()) {
           peakM: (baseM + topM) / 2,
           topM: topM * 1.02,
           thicknessM: Math.max(120, topM - baseM),
-          strengthCPerKm: Math.max(0.3, meanStrength + 0.2),
+          strengthCPerKm: Math.max(0.3, meanStrength + 0.1),
+          centerDiffCPerKm: centerDiff,
         },
         lowInversion: {
           baseM,
@@ -303,6 +310,7 @@ function buildSyntheticForecast(city, startDate = new Date()) {
           topM,
           thicknessM: topM - baseM,
           strengthCPerKm: meanStrength,
+          centerDiffCPerKm: centerDiff,
         },
         cloudCover: sunsetCloud,
         greenScore: sunsetGreen,
@@ -315,6 +323,7 @@ function buildSyntheticForecast(city, startDate = new Date()) {
             topM,
             thicknessM: topM - baseM,
             strengthCPerKm: meanStrength,
+            centerDiffCPerKm: centerDiff,
             lowLevel: true,
           },
           persistence,
@@ -525,7 +534,7 @@ function renderCity(cityData) {
     const sunsetLv = levelLabel(d.sunset.greenScore);
 
     const invText = d.daytime.window.best
-      ? `${fmt(d.daytime.window.best.baseM, 0)} m → 峰值 ${fmt(d.daytime.window.best.peakM, 0)} m → ${fmt(d.daytime.window.best.topM, 0)} m · ${fmt(d.daytime.window.best.strengthCPerKm, 2)} °C/km`
+      ? `${fmt(d.daytime.window.best.baseM, 0)} m → 峰值 ${fmt(d.daytime.window.best.peakM, 0)} m → ${fmt(d.daytime.window.best.topM, 0)} m · 中心反向温差 ${fmt(d.daytime.window.best.centerDiffCPerKm, 2)} °C/km`
       : '无明显峰值型逆温';
 
     return `

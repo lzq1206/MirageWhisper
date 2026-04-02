@@ -5,7 +5,7 @@
     "query": "北京市",
     "lat": 40.033845,
     "lon": 116.431233,
-    "coastal": true
+    "coastal": false
   },
   {
     "id": "上海",
