@@ -1,0 +1,802 @@
+[
+  {
+    "id": "北京",
+    "name": "北京",
+    "query": "北京市",
+    "lat": 40.033845,
+    "lon": 116.431233,
+    "coastal": true
+  },
+  {
+    "id": "上海",
+    "name": "上海",
+    "query": "上海市",
+    "lat": 31.191512,
+    "lon": 121.415226,
+    "coastal": true
+  },
+  {
+    "id": "广州",
+    "name": "广州",
+    "query": "广州市",
+    "lat": 23.163086,
+    "lon": 113.401127,
+    "coastal": true
+  },
+  {
+    "id": "深圳",
+    "name": "深圳",
+    "query": "深圳市",
+    "lat": 22.624769,
+    "lon": 114.092995,
+    "coastal": true
+  },
+  {
+    "id": "重庆",
+    "name": "重庆",
+    "query": "重庆市",
+    "lat": 29.715382,
+    "lon": 106.804398,
+    "coastal": false
+  },
+  {
+    "id": "天津",
+    "name": "天津",
+    "query": "天津市",
+    "lat": 39.224361,
+    "lon": 117.269829,
+    "coastal": true
+  },
+  {
+    "id": "成都",
+    "name": "成都",
+    "query": "成都市",
+    "lat": 30.661668,
+    "lon": 103.974103,
+    "coastal": false
+  },
+  {
+    "id": "武汉",
+    "name": "武汉",
+    "query": "武汉市",
+    "lat": 30.594033,
+    "lon": 114.300434,
+    "coastal": false
+  },
+  {
+    "id": "东莞",
+    "name": "东莞",
+    "query": "东莞市",
+    "lat": 23.027308,
+    "lon": 113.75842,
+    "coastal": true
+  },
+  {
+    "id": "西安",
+    "name": "西安",
+    "query": "西安市",
+    "lat": 34.293851,
+    "lon": 108.957938,
+    "coastal": false
+  },
+  {
+    "id": "杭州",
+    "name": "杭州",
+    "query": "杭州市",
+    "lat": 30.118421,
+    "lon": 119.97158,
+    "coastal": false
+  },
+  {
+    "id": "南京",
+    "name": "南京",
+    "query": "南京市",
+    "lat": 31.974131,
+    "lon": 118.822062,
+    "coastal": false
+  },
+  {
+    "id": "苏州",
+    "name": "苏州",
+    "query": "苏州市",
+    "lat": 31.405592,
+    "lon": 120.718815,
+    "coastal": false
+  },
+  {
+    "id": "郑州",
+    "name": "郑州",
+    "query": "郑州市",
+    "lat": 34.695201,
+    "lon": 113.590328,
+    "coastal": false
+  },
+  {
+    "id": "长沙",
+    "name": "长沙",
+    "query": "长沙市",
+    "lat": 28.226327,
+    "lon": 113.007376,
+    "coastal": false
+  },
+  {
+    "id": "青岛",
+    "name": "青岛",
+    "query": "青岛市",
+    "lat": 36.304402,
+    "lon": 120.355062,
+    "coastal": true
+  },
+  {
+    "id": "沈阳",
+    "name": "沈阳",
+    "query": "沈阳市",
+    "lat": 41.912028,
+    "lon": 123.336374,
+    "coastal": false
+  },
+  {
+    "id": "哈尔滨",
+    "name": "哈尔滨",
+    "query": "哈尔滨市",
+    "lat": 45.720788,
+    "lon": 127.359417,
+    "coastal": false
+  },
+  {
+    "id": "大连",
+    "name": "大连",
+    "query": "大连市",
+    "lat": 39.140437,
+    "lon": 121.870644,
+    "coastal": true
+  },
+  {
+    "id": "济南",
+    "name": "济南",
+    "query": "济南市",
+    "lat": 36.629444,
+    "lon": 117.14895,
+    "coastal": false
+  },
+  {
+    "id": "佛山",
+    "name": "佛山",
+    "query": "佛山市",
+    "lat": 22.992811,
+    "lon": 113.085143,
+    "coastal": true
+  },
+  {
+    "id": "昆明",
+    "name": "昆明",
+    "query": "昆明市",
+    "lat": 25.139352,
+    "lon": 102.839219,
+    "coastal": false
+  },
+  {
+    "id": "厦门",
+    "name": "厦门",
+    "query": "厦门市",
+    "lat": 24.554372,
+    "lon": 118.127795,
+    "coastal": true
+  },
+  {
+    "id": "无锡",
+    "name": "无锡",
+    "query": "无锡市",
+    "lat": 31.588806,
+    "lon": 120.260165,
+    "coastal": false
+  },
+  {
+    "id": "长春",
+    "name": "长春",
+    "query": "长春市",
+    "lat": 44.00659,
+    "lon": 125.486894,
+    "coastal": false
+  },
+  {
+    "id": "合肥",
+    "name": "合肥",
+    "query": "合肥市",
+    "lat": 31.821415,
+    "lon": 117.306822,
+    "coastal": false
+  },
+  {
+    "id": "福州",
+    "name": "福州",
+    "query": "福州市",
+    "lat": 26.037622,
+    "lon": 119.340062,
+    "coastal": true
+  },
+  {
+    "id": "太原",
+    "name": "太原",
+    "query": "太原市",
+    "lat": 37.860425,
+    "lon": 112.45077,
+    "coastal": false
+  },
+  {
+    "id": "南宁",
+    "name": "南宁",
+    "query": "南宁市",
+    "lat": 23.00208,
+    "lon": 108.425655,
+    "coastal": false
+  },
+  {
+    "id": "南昌",
+    "name": "南昌",
+    "query": "南昌市",
+    "lat": 28.656162,
+    "lon": 115.886705,
+    "coastal": false
+  },
+  {
+    "id": "贵阳",
+    "name": "贵阳",
+    "query": "贵阳市",
+    "lat": 26.705903,
+    "lon": 106.6869,
+    "coastal": false
+  },
+  {
+    "id": "兰州",
+    "name": "兰州",
+    "query": "兰州市",
+    "lat": 36.235313,
+    "lon": 103.668848,
+    "coastal": false
+  },
+  {
+    "id": "乌鲁木齐",
+    "name": "乌鲁木齐",
+    "query": "乌鲁木齐市",
+    "lat": 43.760763,
+    "lon": 87.658043,
+    "coastal": false
+  },
+  {
+    "id": "宁波",
+    "name": "宁波",
+    "query": "宁波市",
+    "lat": 29.814925,
+    "lon": 121.548511,
+    "coastal": true
+  },
+  {
+    "id": "南通",
+    "name": "南通",
+    "query": "南通市",
+    "lat": 32.098955,
+    "lon": 120.972837,
+    "coastal": true
+  },
+  {
+    "id": "烟台",
+    "name": "烟台",
+    "query": "烟台市",
+    "lat": 37.425824,
+    "lon": 121.008419,
+    "coastal": true
+  },
+  {
+    "id": "潍坊",
+    "name": "潍坊",
+    "query": "潍坊市",
+    "lat": 36.661555,
+    "lon": 119.100249,
+    "coastal": true
+  },
+  {
+    "id": "金华",
+    "name": "金华",
+    "query": "金华市",
+    "lat": 29.141348,
+    "lon": 119.896028,
+    "coastal": false
+  },
+  {
+    "id": "温州",
+    "name": "温州",
+    "query": "温州市",
+    "lat": 27.845599,
+    "lon": 120.607728,
+    "coastal": true
+  },
+  {
+    "id": "绍兴",
+    "name": "绍兴",
+    "query": "绍兴市",
+    "lat": 29.848104,
+    "lon": 120.64305,
+    "coastal": false
+  },
+  {
+    "id": "台州",
+    "name": "台州",
+    "query": "台州市",
+    "lat": 28.70804,
+    "lon": 121.245122,
+    "coastal": true
+  },
+  {
+    "id": "嘉兴",
+    "name": "嘉兴",
+    "query": "嘉兴市",
+    "lat": 30.684775,
+    "lon": 120.80428,
+    "coastal": true
+  },
+  {
+    "id": "泉州",
+    "name": "泉州",
+    "query": "泉州市",
+    "lat": 24.971571,
+    "lon": 118.536552,
+    "coastal": true
+  },
+  {
+    "id": "珠海",
+    "name": "珠海",
+    "query": "珠海市",
+    "lat": 22.229415,
+    "lon": 113.451503,
+    "coastal": true
+  },
+  {
+    "id": "中山",
+    "name": "中山",
+    "query": "中山市",
+    "lat": 22.522315,
+    "lon": 113.399422,
+    "coastal": true
+  },
+  {
+    "id": "江门",
+    "name": "江门",
+    "query": "江门市",
+    "lat": 22.477191,
+    "lon": 112.889498,
+    "coastal": true
+  },
+  {
+    "id": "惠州",
+    "name": "惠州",
+    "query": "惠州市",
+    "lat": 23.150815,
+    "lon": 114.426824,
+    "coastal": true
+  },
+  {
+    "id": "汕头",
+    "name": "汕头",
+    "query": "汕头市",
+    "lat": 23.353439,
+    "lon": 116.712006,
+    "coastal": true
+  },
+  {
+    "id": "湛江",
+    "name": "湛江",
+    "query": "湛江市",
+    "lat": 21.196444,
+    "lon": 110.356613,
+    "coastal": true
+  },
+  {
+    "id": "北海",
+    "name": "北海",
+    "query": "北海市",
+    "lat": 21.524994,
+    "lon": 109.207902,
+    "coastal": true
+  },
+  {
+    "id": "海口",
+    "name": "海口",
+    "query": "海口市",
+    "lat": 20.027562,
+    "lon": 110.339105,
+    "coastal": true
+  },
+  {
+    "id": "三亚",
+    "name": "三亚",
+    "query": "三亚市",
+    "lat": 18.350416,
+    "lon": 109.47751,
+    "coastal": true
+  },
+  {
+    "id": "秦皇岛",
+    "name": "秦皇岛",
+    "query": "秦皇岛市",
+    "lat": 39.936509,
+    "lon": 119.380595,
+    "coastal": true
+  },
+  {
+    "id": "唐山",
+    "name": "唐山",
+    "query": "唐山市",
+    "lat": 39.729917,
+    "lon": 118.3811,
+    "coastal": true
+  },
+  {
+    "id": "保定",
+    "name": "保定",
+    "query": "保定市",
+    "lat": 38.948105,
+    "lon": 115.481908,
+    "coastal": false
+  },
+  {
+    "id": "沧州",
+    "name": "沧州",
+    "query": "沧州市",
+    "lat": 38.286115,
+    "lon": 116.782086,
+    "coastal": true
+  },
+  {
+    "id": "廊坊",
+    "name": "廊坊",
+    "query": "廊坊市",
+    "lat": 39.440235,
+    "lon": 116.68634,
+    "coastal": true
+  },
+  {
+    "id": "邯郸",
+    "name": "邯郸",
+    "query": "邯郸市",
+    "lat": 36.572946,
+    "lon": 114.64916,
+    "coastal": false
+  },
+  {
+    "id": "石家庄",
+    "name": "石家庄",
+    "query": "石家庄市",
+    "lat": 38.043379,
+    "lon": 114.595432,
+    "coastal": false
+  },
+  {
+    "id": "徐州",
+    "name": "徐州",
+    "query": "徐州市",
+    "lat": 34.336603,
+    "lon": 117.399342,
+    "coastal": false
+  },
+  {
+    "id": "连云港",
+    "name": "连云港",
+    "query": "连云港市",
+    "lat": 34.480892,
+    "lon": 119.143411,
+    "coastal": true
+  },
+  {
+    "id": "盐城",
+    "name": "盐城",
+    "query": "盐城市",
+    "lat": 33.524967,
+    "lon": 120.080194,
+    "coastal": true
+  },
+  {
+    "id": "扬州",
+    "name": "扬州",
+    "query": "扬州市",
+    "lat": 32.529082,
+    "lon": 119.409076,
+    "coastal": true
+  },
+  {
+    "id": "镇江",
+    "name": "镇江",
+    "query": "镇江市",
+    "lat": 32.139609,
+    "lon": 119.484893,
+    "coastal": true
+  },
+  {
+    "id": "泰州",
+    "name": "泰州",
+    "query": "泰州市",
+    "lat": 32.416704,
+    "lon": 119.99884,
+    "coastal": true
+  },
+  {
+    "id": "淮安",
+    "name": "淮安",
+    "query": "淮安市",
+    "lat": 33.440806,
+    "lon": 119.012688,
+    "coastal": false
+  },
+  {
+    "id": "宿迁",
+    "name": "宿迁",
+    "query": "宿迁市",
+    "lat": 33.8815,
+    "lon": 118.41306,
+    "coastal": false
+  },
+  {
+    "id": "洛阳",
+    "name": "洛阳",
+    "query": "洛阳市",
+    "lat": 34.543032,
+    "lon": 112.328504,
+    "coastal": false
+  },
+  {
+    "id": "开封",
+    "name": "开封",
+    "query": "开封市",
+    "lat": 34.70556,
+    "lon": 114.448978,
+    "coastal": false
+  },
+  {
+    "id": "安阳",
+    "name": "安阳",
+    "query": "安阳市",
+    "lat": 36.031366,
+    "lon": 114.361716,
+    "coastal": false
+  },
+  {
+    "id": "新乡",
+    "name": "新乡",
+    "query": "新乡市",
+    "lat": 35.251378,
+    "lon": 113.972984,
+    "coastal": false
+  },
+  {
+    "id": "许昌",
+    "name": "许昌",
+    "query": "许昌市",
+    "lat": 34.068897,
+    "lon": 113.793978,
+    "coastal": false
+  },
+  {
+    "id": "南阳",
+    "name": "南阳",
+    "query": "南阳市",
+    "lat": 32.979869,
+    "lon": 112.433995,
+    "coastal": false
+  },
+  {
+    "id": "商丘",
+    "name": "商丘",
+    "query": "商丘市",
+    "lat": 34.359484,
+    "lon": 115.646388,
+    "coastal": false
+  },
+  {
+    "id": "周口",
+    "name": "周口",
+    "query": "周口市",
+    "lat": 33.706611,
+    "lon": 114.833228,
+    "coastal": false
+  },
+  {
+    "id": "驻马店",
+    "name": "驻马店",
+    "query": "驻马店市",
+    "lat": 32.988816,
+    "lon": 114.181748,
+    "coastal": false
+  },
+  {
+    "id": "宜昌",
+    "name": "宜昌",
+    "query": "宜昌市",
+    "lat": 30.687251,
+    "lon": 111.333517,
+    "coastal": false
+  },
+  {
+    "id": "襄阳",
+    "name": "襄阳",
+    "query": "襄阳市",
+    "lat": 32.036154,
+    "lon": 112.012718,
+    "coastal": false
+  },
+  {
+    "id": "荆州",
+    "name": "荆州",
+    "query": "荆州市",
+    "lat": 30.106872,
+    "lon": 112.416685,
+    "coastal": false
+  },
+  {
+    "id": "黄石",
+    "name": "黄石",
+    "query": "黄石市",
+    "lat": 30.139352,
+    "lon": 115.045326,
+    "coastal": false
+  },
+  {
+    "id": "孝感",
+    "name": "孝感",
+    "query": "孝感市",
+    "lat": 31.071869,
+    "lon": 113.857242,
+    "coastal": false
+  },
+  {
+    "id": "九江",
+    "name": "九江",
+    "query": "九江市",
+    "lat": 29.477206,
+    "lon": 115.838635,
+    "coastal": false
+  },
+  {
+    "id": "赣州",
+    "name": "赣州",
+    "query": "赣州市",
+    "lat": 25.612211,
+    "lon": 115.170316,
+    "coastal": false
+  },
+  {
+    "id": "上饶",
+    "name": "上饶",
+    "query": "上饶市",
+    "lat": 28.632945,
+    "lon": 117.614716,
+    "coastal": false
+  },
+  {
+    "id": "常德",
+    "name": "常德",
+    "query": "常德市",
+    "lat": 29.260226,
+    "lon": 111.764555,
+    "coastal": false
+  },
+  {
+    "id": "岳阳",
+    "name": "岳阳",
+    "query": "岳阳市",
+    "lat": 29.174089,
+    "lon": 113.104933,
+    "coastal": false
+  },
+  {
+    "id": "衡阳",
+    "name": "衡阳",
+    "query": "衡阳市",
+    "lat": 26.88927,
+    "lon": 112.595683,
+    "coastal": false
+  },
+  {
+    "id": "株洲",
+    "name": "株洲",
+    "query": "株洲市",
+    "lat": 27.520853,
+    "lon": 113.288379,
+    "coastal": false
+  },
+  {
+    "id": "湘潭",
+    "name": "湘潭",
+    "query": "湘潭市",
+    "lat": 27.825308,
+    "lon": 112.859719,
+    "coastal": false
+  },
+  {
+    "id": "绵阳",
+    "name": "绵阳",
+    "query": "绵阳市",
+    "lat": 31.608174,
+    "lon": 104.811894,
+    "coastal": false
+  },
+  {
+    "id": "德阳",
+    "name": "德阳",
+    "query": "德阳市",
+    "lat": 31.157677,
+    "lon": 104.388752,
+    "coastal": false
+  },
+  {
+    "id": "南充",
+    "name": "南充",
+    "query": "南充市",
+    "lat": 31.051239,
+    "lon": 106.168296,
+    "coastal": false
+  },
+  {
+    "id": "宜宾",
+    "name": "宜宾",
+    "query": "宜宾市",
+    "lat": 28.599703,
+    "lon": 104.740493,
+    "coastal": false
+  },
+  {
+    "id": "泸州",
+    "name": "泸州",
+    "query": "泸州市",
+    "lat": 28.705329,
+    "lon": 105.526086,
+    "coastal": false
+  },
+  {
+    "id": "乐山",
+    "name": "乐山",
+    "query": "乐山市",
+    "lat": 29.372135,
+    "lon": 103.653154,
+    "coastal": false
+  },
+  {
+    "id": "西宁",
+    "name": "西宁",
+    "query": "西宁市",
+    "lat": 36.659571,
+    "lon": 101.682869,
+    "coastal": false
+  },
+  {
+    "id": "银川",
+    "name": "银川",
+    "query": "银川市",
+    "lat": 38.414231,
+    "lon": 106.271813,
+    "coastal": false
+  },
+  {
+    "id": "呼和浩特",
+    "name": "呼和浩特",
+    "query": "呼和浩特市",
+    "lat": 40.676313,
+    "lon": 111.576492,
+    "coastal": false
+  },
+  {
+    "id": "大庆",
+    "name": "大庆",
+    "query": "大庆市",
+    "lat": 46.433161,
+    "lon": 124.983074,
+    "coastal": false
+  },
+  {
+    "id": "牡丹江",
+    "name": "牡丹江",
+    "query": "牡丹江市",
+    "lat": 44.574276,
+    "lon": 129.958953,
+    "coastal": false
+  }
+]

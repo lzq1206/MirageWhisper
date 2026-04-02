@@ -1,32 +1,8 @@
-const CITIES = [
-  { id: 'dalian', name: '大连', lat: 38.914, lon: 121.6147, coastal: true },
-  { id: 'qinhuangdao', name: '秦皇岛', lat: 39.9354, lon: 119.5996, coastal: true },
-  { id: 'tianjin', name: '天津', lat: 39.0842, lon: 117.201, coastal: true },
-  { id: 'yantai', name: '烟台', lat: 37.4638, lon: 121.4479, coastal: true },
-  { id: 'weihai', name: '威海', lat: 37.5131, lon: 122.1205, coastal: true },
-  { id: 'qingdao', name: '青岛', lat: 36.0671, lon: 120.3826, coastal: true },
-  { id: 'rizhao', name: '日照', lat: 35.4164, lon: 119.5269, coastal: true },
-  { id: 'lianyungang', name: '连云港', lat: 34.5967, lon: 119.2216, coastal: true },
-  { id: 'nantong', name: '南通', lat: 32.0162, lon: 120.8646, coastal: true },
-  { id: 'shanghai', name: '上海', lat: 31.2304, lon: 121.4737, coastal: true },
-  { id: 'ningbo', name: '宁波', lat: 29.8683, lon: 121.5440, coastal: true },
-  { id: 'wenzhou', name: '温州', lat: 27.9949, lon: 120.6994, coastal: true },
-  { id: 'fuzhou', name: '福州', lat: 26.0745, lon: 119.2965, coastal: true },
-  { id: 'xiamen', name: '厦门', lat: 24.4798, lon: 118.0894, coastal: true },
-  { id: 'shantou', name: '汕头', lat: 23.3541, lon: 116.6819, coastal: true },
-  { id: 'shenzhen', name: '深圳', lat: 22.5431, lon: 114.0579, coastal: true },
-  { id: 'zhuhai', name: '珠海', lat: 22.2707, lon: 113.5767, coastal: true },
-  { id: 'zhanjiang', name: '湛江', lat: 21.2713, lon: 110.3594, coastal: true },
-  { id: 'beihai', name: '北海', lat: 21.4733, lon: 109.1192, coastal: true },
-  { id: 'haikou', name: '海口', lat: 20.044, lon: 110.1999, coastal: true },
-  { id: 'sanya', name: '三亚', lat: 18.2528, lon: 109.5119, coastal: true },
-  { id: 'guangzhou', name: '广州', lat: 23.1291, lon: 113.2644, coastal: false },
-  { id: 'wuhan', name: '武汉', lat: 30.5928, lon: 114.3055, coastal: false },
-];
-
+const CITY_LIST_URL = './data/cities.json';
 const LEVELS = [1000, 925, 850, 700, 600, 500];
 const GFS_URL = 'https://api.open-meteo.com/v1/gfs';
 const MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine';
+const CITY_CONCURRENCY = 6;
 
 const citySelect = document.getElementById('citySelect');
 const eventTypeSelect = document.getElementById('eventType');
@@ -38,6 +14,7 @@ const cityMetaEl = document.getElementById('cityMeta');
 const dailyCardsEl = document.getElementById('dailyCards');
 const rankingEl = document.getElementById('ranking');
 
+let cityCatalog = [];
 let allCityData = [];
 
 function fmt(n, d = 1) {
@@ -182,6 +159,34 @@ async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
+}
+
+async function loadCityCatalog() {
+  if (cityCatalog.length) return cityCatalog;
+  const res = await fetch(CITY_LIST_URL);
+  if (!res.ok) throw new Error(`城市名单加载失败: ${res.status}`);
+  cityCatalog = await res.json();
+  return cityCatalog;
+}
+
+async function mapLimit(items, limit, mapper) {
+  const results = new Array(items.length);
+  let index = 0;
+  async function worker() {
+    while (true) {
+      const i = index;
+      index += 1;
+      if (i >= items.length) break;
+      try {
+        results[i] = { status: 'fulfilled', value: await mapper(items[i], i) };
+      } catch (error) {
+        results[i] = { status: 'rejected', reason: error };
+      }
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
 }
 
 async function fetchCity(city) {
@@ -386,21 +391,21 @@ function updateAllViews() {
 }
 
 async function load() {
-  statusEl.textContent = '正在拉取 GFS 分层温度与海温数据…';
+  statusEl.textContent = '正在加载城市池与 GFS 分层温度数据…';
   refreshBtn.disabled = true;
   try {
-    const settled = await Promise.allSettled(CITIES.map(fetchCity));
-    allCityData = settled
-      .map((item, idx) => (item.status === 'fulfilled' ? item.value : null))
-      .filter(Boolean);
+    const catalog = await loadCityCatalog();
+    citySelect.innerHTML = catalog
+      .map((c) => `<option value="${c.id}">${c.name}${c.coastal ? ' · 沿海' : ''}</option>`)
+      .join('');
+
+    const settled = await mapLimit(catalog, CITY_CONCURRENCY, fetchCity);
+    allCityData = settled.filter((item) => item.status === 'fulfilled').map((item) => item.value);
 
     if (!allCityData.length) {
       throw new Error('所有城市都未能成功获取数据');
     }
 
-    citySelect.innerHTML = allCityData
-      .map((x) => `<option value="${x.city.id}">${x.city.name}${x.coastal ? ' · 沿海' : ''}</option>`)
-      .join('');
     if (!citySelect.value) citySelect.value = allCityData[0].city.id;
     updateAllViews();
     const failed = settled.length - allCityData.length;
